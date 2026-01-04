@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTAIS Probabilistic Topology Map</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0e27;
+            --bg-medium: #151b3d;
+            --bg-light: #1f2847;
+            --accent-primary: #00d9ff;
+            --accent-secondary: #7c3aed;
+            --accent-tertiary: #f59e0b;
+            --accent-quaternary: #ec4899;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --glow-blue: rgba(0, 217, 255, 0.4);
+            --glow-purple: rgba(124, 58, 237, 0.4);
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        /* Animated background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 217, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 217, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            animation: gridPulse 8s ease-in-out infinite;
+        }
+        
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.5; }
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 1s ease-out;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 60px var(--glow-blue);
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        /* Main visualization container */
+        .viz-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 30px;
+            margin-bottom: 60px;
+            animation: fadeIn 1.5s ease-out 0.3s both;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Sidebar - Realm Navigator */
+        .realm-nav {
+            background: var(--bg-medium);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .realm-nav h2 {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .realm-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-size: 0.9em;
+        }
+        
+        .realm-item:hover {
+            background: var(--bg-light);
+            border-left-color: var(--accent-primary);
+            transform: translateX(5px);
+        }
+        
+        .realm-item.active {
+            background: var(--bg-light);
+            border-left-color: var(--accent-primary);
+            box-shadow: 0 0 20px var(--glow-blue);
+        }
+        
+        .realm-code {
+            font-family: 'Space Mono', monospace;
+            color: var(--accent-primary);
+            font-weight: 700;
+        }
+        
+        /* Center - Topology Visualization */
+        .topology-view {
+            background: var(--bg-medium);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            min-height: 800px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .topology-view::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 217, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .topology-canvas {
+            position: relative;
+            width: 100%;
+            height: 750px;
+            z-index: 1;
+        }
+        
+        /* SVG Manifold */
+        #manifoldSVG {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .manifold-region {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.3));
+        }
+        
+        .manifold-region:hover {
+            filter: drop-shadow(0 0 20px var(--glow-blue));
+        }
+        
+        .manifold-region.active {
+            filter: drop-shadow(0 0 30px var(--glow-blue));
+        }
+        
+        .region-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            fill: var(--text-primary);
+            pointer-events: none;
+            text-anchor: middle;
+        }
+        
+        .hallucination-node {
+            cursor: pointer;
+        }
+        
+        .hallucination-node circle {
+            filter: drop-shadow(0 0 8px currentColor);
+            transition: all 0.3s ease;
+        }
+        
+        .hallucination-node:hover circle {
+            filter: drop-shadow(0 0 20px currentColor);
+            stroke-width: 3;
+        }
+        
+        .hallucination-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            pointer-events: none;
+            text-anchor: middle;
+        }
+        
+        /* Right sidebar - Info Panel */
+        .info-panel {
+            background: var(--bg-medium);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            height: fit-content;
+            max-height: 800px;
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .info-panel h2 {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .info-content {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .hallucination-detail {
+            margin-bottom: 20px;
+        }
+        
+        .hallucination-id {
+            font-family: 'Space Mono', monospace;
+            color: var(--accent-primary);
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .hallucination-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+        
+        .hallucination-category {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .cat-factual { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .cat-contextual { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .cat-temporal { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+        .cat-logical { background: rgba(236, 72, 153, 0.2); color: #f9a8d4; }
+        .cat-operational { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+        
+        .domain-examples {
+            background: var(--bg-light);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-secondary);
+        }
+        
+        .domain-examples h3 {
+            font-size: 0.9em;
+            color: var(--accent-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .domain-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 4px 4px 4px 0;
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        
+        .domain-tag:hover {
+            background: rgba(124, 58, 237, 0.3);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+        
+        .prevalence-indicator {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+        }
+        
+        .prevalence-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .prevalence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+            padding: 20px;
+            background: var(--bg-medium);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        /* Scrollbar styling */
+        .info-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .info-panel::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+            border-radius: 4px;
+        }
+        
+        .info-panel::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 4px;
+        }
+        
+        .info-panel::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-secondary);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .viz-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            
+            .realm-nav, .info-panel {
+                position: relative;
+                top: 0;
+            }
+            
+            .topology-view {
+                order: 1;
+            }
+            
+            .realm-nav {
+                order: 0;
+            }
+            
+            .info-panel {
+                order: 2;
+            }
+        }
+        
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            background: var(--bg-light);
+            border: 1px solid var(--accent-primary);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <header>
+            <h1>HTAIS Topology Map</h1>
+            <p class="subtitle">Interactive Hallucination Landscape v1.2 (Public Edition)</p>
+        </header>
+        
+        <div class="viz-container">
+            <!-- Left: Computational Navigator -->
+            <div class="realm-nav">
+                <h2>Regions</h2>
+                <div class="realm-item active" data-realm="all">
+                    <div class="realm-code">All</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Complete Topology</div>
+                </div>
+                <div class="realm-item" data-realm="R1">
+                    <div class="realm-code">Foundation</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Rule-Based</div>
+                </div>
+                <div class="realm-item" data-realm="R2">
+                    <div class="realm-code">Core</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Probabilistic</div>
+                </div>
+                <div class="realm-item" data-realm="R3">
+                    <div class="realm-code">Complex</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Search-Based</div>
+                </div>
+                <div class="realm-item" data-realm="R4">
+                    <div class="realm-code">Deep</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Recursive</div>
+                </div>
+                <div class="realm-item" data-realm="R6">
+                    <div class="realm-code">Continuous</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Physical/Temporal</div>
+                </div>
+                <div class="realm-item" data-realm="R7">
+                    <div class="realm-code">Synthesis</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Multi-Modal</div>
+                </div>
+                <div class="realm-item" data-realm="R8">
+                    <div class="realm-code">Emergent</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary);">Pattern-Based</div>
+                </div>
+            </div>
+            
+            <!-- Center: Topology Visualization -->
+            <div class="topology-view">
+                <div style="position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(10, 14, 39, 0.9); padding: 15px; border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.3); max-width: 350px;">
+                    <div style="font-family: 'Space Mono', monospace; color: var(--accent-primary); font-size: 0.9em; margin-bottom: 8px; font-weight: 700;">HALLUCINATION LANDSCAPE</div>
+                    <div style="font-size: 0.85em; color: var(--text-secondary); line-height: 1.5;">
+                        Each colored region represents a computational domain where related hallucination types cluster. Click nodes to explore specific types and see which AI domains they affect most.
+                    </div>
+                </div>
+                <div class="topology-canvas">
+                    <svg id="manifoldSVG" viewBox="0 0 1000 750"></svg>
+                </div>
+            </div>
+            
+            <!-- Right: Info Panel -->
+            <div class="info-panel">
+                <h2>Details</h2>
+                <div class="info-content" id="infoContent">
+                    <p style="color: var(--text-secondary); font-size: 0.95em;">
+                        Hover over regions to explore the probabilistic topology. Click hallucination nodes to see domain examples and prevalence data.
+                    </p>
+                    <div style="margin-top: 20px; padding: 15px; background: var(--bg-light); border-radius: 8px;">
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px;">Coverage</div>
+                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-primary);">22 Types</div>
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-top: 4px;">Across 8 Computational Regions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(239, 68, 68, 0.3);"></div>
+                <span>Factual (H1-H5)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(245, 158, 11, 0.3);"></div>
+                <span>Contextual (H6-H8)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(59, 130, 246, 0.3);"></div>
+                <span>Temporal (H9-H11)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(236, 72, 153, 0.3);"></div>
+                <span>Logical (H12-H14)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(34, 197, 94, 0.3);"></div>
+                <span>Operational (H15-H22)</span>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="margin-top: 40px; padding: 30px; background: rgba(10, 14, 39, 0.5); border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.2); text-align: center;">
+            <div style="color: var(--text-secondary); font-size: 0.9em; line-height: 1.8;">
+                <strong style="color: var(--text-primary);">HTAIS v1.2 Interactive Topology - Public Edition</strong><br>
+                Copyright © 2024-2026 MosaicDM LLC. Licensed under CC BY 4.0.<br>
+                For commercial implementation, detection services, or mathematical specifications:<br>
+                <a href="mailto:contact@mosaicdm.co" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">contact@mosaicdm.co</a> | 
+                <a href="https://mosaicdm.co" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">mosaicdm.co</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // HTAIS Data Structure with computational regions and domain examples
+        const htaisData = {
+            H1: {
+                name: "Unsupported Factual Claim",
+                category: "Factual",
+                realm: "R2",
+                domains: ["LLMs", "Generative AI", "Medical Diagnosis", "Molecular Design", "Autonomous Systems", "Recommender Systems"],
+                prevalence: 95,
+                description: "Assertion without adequate grounding in sources or verifiable knowledge"
+            },
+            H2: {
+                name: "Fabricated Source",
+                category: "Factual",
+                realm: "R1",
+                domains: ["LLMs", "Medical Diagnosis", "Scientific Simulation"],
+                prevalence: 85,
+                description: "Citation of non-existent or misattributed sources"
+            },
+            H3: {
+                name: "Fabricated Detail",
+                category: "Factual",
+                realm: "R2",
+                domains: ["LLMs", "Generative AI", "Synthetic Data", "Translation"],
+                prevalence: 88,
+                description: "Addition of specific but incorrect details to accurate information"
+            },
+            H4: {
+                name: "Fabricated Relationship",
+                category: "Factual",
+                realm: "R7",
+                domains: ["LLMs", "Generative AI", "Synthetic Data", "Molecular Design"],
+                prevalence: 82,
+                description: "Assertion of false connections or relationships between entities"
+            },
+            H5: {
+                name: "False Pattern Detection",
+                category: "Factual",
+                realm: "R8",
+                domains: ["Financial Modeling", "Medical Diagnosis", "Recommender Systems", "Scientific Simulation"],
+                prevalence: 92,
+                description: "Claiming to detect patterns that don't actually exist (apophenia)"
+            },
+            H6: {
+                name: "Out-of-Scope Assertion",
+                category: "Contextual",
+                realm: "R7",
+                domains: ["LLMs", "Translation", "Code Generation", "Autonomous Systems"],
+                prevalence: 78,
+                description: "Claims beyond defined scope or boundaries of system knowledge"
+            },
+            H7: {
+                name: "Hidden Claim",
+                category: "Contextual",
+                realm: "R2",
+                domains: ["LLMs", "Recommender Systems", "Translation"],
+                prevalence: 71,
+                description: "Embedding unsupported claims without making them explicit"
+            },
+            H8: {
+                name: "Context Drift",
+                category: "Contextual",
+                realm: "R7",
+                domains: ["LLMs", "Financial Modeling", "Synthetic Data", "Translation"],
+                prevalence: 85,
+                description: "Gradual deviation from original context leading to unsupported claims"
+            },
+            H9: {
+                name: "Outdated Fact",
+                category: "Temporal",
+                realm: "R6",
+                domains: ["LLMs", "Autonomous Systems", "Recommender Systems", "Financial Modeling"],
+                prevalence: 90,
+                description: "Presenting previously true information as current when superseded"
+            },
+            H10: {
+                name: "Premature Assertion",
+                category: "Temporal",
+                realm: "R6",
+                domains: ["Autonomous Systems", "Code Generation", "Scientific Simulation"],
+                prevalence: 75,
+                description: "Claiming something occurred when it hasn't yet happened"
+            },
+            H11: {
+                name: "Anachronism",
+                category: "Temporal",
+                realm: "R6",
+                domains: ["LLMs", "Generative AI", "Translation"],
+                prevalence: 68,
+                description: "Placing events or concepts in incorrect temporal contexts"
+            },
+            H12: {
+                name: "Self-Contradiction",
+                category: "Logical",
+                realm: "R1",
+                domains: ["LLMs", "Molecular Design", "Scientific Simulation", "Code Generation"],
+                prevalence: 83,
+                description: "Making mutually incompatible claims within same response"
+            },
+            H13: {
+                name: "Incompatible Constraints",
+                category: "Logical",
+                realm: "R1",
+                domains: ["Molecular Design", "Code Generation", "Autonomous Systems"],
+                prevalence: 79,
+                description: "Specifying requirements that cannot simultaneously be satisfied"
+            },
+            H14: {
+                name: "Invalid Inference",
+                category: "Logical",
+                realm: "R4",
+                domains: ["LLMs", "Medical Diagnosis", "Financial Modeling", "Code Generation"],
+                prevalence: 87,
+                description: "Drawing conclusions that don't logically follow from premises"
+            },
+            H15: {
+                name: "Overconfidence",
+                category: "Operational",
+                realm: "R2",
+                domains: ["Financial Modeling", "Medical Diagnosis", "Autonomous Systems", "LLMs"],
+                prevalence: 94,
+                description: "Presenting uncertain information with inappropriate certainty"
+            },
+            H16: {
+                name: "Missing Qualification",
+                category: "Operational",
+                realm: "R2",
+                domains: ["LLMs", "Medical Diagnosis", "Financial Modeling", "Code Generation"],
+                prevalence: 81,
+                description: "Failing to provide necessary context or limitations"
+            },
+            H17: {
+                name: "Authority Inflation",
+                category: "Operational",
+                realm: "R7",
+                domains: ["LLMs", "Medical Diagnosis"],
+                prevalence: 72,
+                description: "Claiming capabilities beyond actual design or validation"
+            },
+            H18: {
+                name: "Fake Tool Use",
+                category: "Operational",
+                realm: "R1",
+                domains: ["LLMs", "Code Generation", "Autonomous Systems"],
+                prevalence: 88,
+                description: "Claiming to use tools without actually executing them"
+            },
+            H19: {
+                name: "Imaginary Computation",
+                category: "Operational",
+                realm: "R1",
+                domains: ["Code Generation", "Scientific Simulation", "Financial Modeling"],
+                prevalence: 85,
+                description: "Presenting computational results without performing calculation"
+            },
+            H20: {
+                name: "Broken Schema",
+                category: "Operational",
+                realm: "R1",
+                domains: ["Code Generation", "Molecular Design", "Synthetic Data"],
+                prevalence: 76,
+                description: "Generating outputs that violate specified schemas or formats"
+            },
+            H21: {
+                name: "Silent Failure",
+                category: "Operational",
+                realm: "R1",
+                domains: ["Autonomous Systems", "Code Generation", "Scientific Simulation"],
+                prevalence: 80,
+                description: "Proceeding with output despite errors without indicating failure"
+            },
+            H22: {
+                name: "Type/Category Confusion",
+                category: "Operational",
+                realm: "R7",
+                domains: ["Financial Modeling", "Molecular Design", "Autonomous Systems", "Code Generation", "Scientific Simulation", "LLMs"],
+                prevalence: 96,
+                description: "Applying reasoning valid in one domain to another where it doesn't apply"
+            }
+        };
+        
+        // DI Realm-based layout coordinates (using DI topology principles)
+        const layoutCoordinates = {
+            // R1 (Deterministic) - Bottom-left, foundational
+            H2: {x: 150, y: 600, realm: "R1"},
+            H12: {x: 200, y: 550, realm: "R1"},
+            H13: {x: 250, y: 620, realm: "R1"},
+            H18: {x: 180, y: 670, realm: "R1"},
+            H19: {x: 220, y: 700, realm: "R1"},
+            H20: {x: 150, y: 680, realm: "R1"},
+            H21: {x: 120, y: 630, realm: "R1"},
+            
+            // R2 (Probabilistic) - Center-left, core probabilistic
+            H1: {x: 350, y: 400, realm: "R2"},
+            H3: {x: 400, y: 450, realm: "R2"},
+            H7: {x: 320, y: 480, realm: "R2"},
+            H15: {x: 380, y: 520, realm: "R2"},
+            H16: {x: 420, y: 380, realm: "R2"},
+            
+            // R6 (Physical/Temporal) - Top section, time-based
+            H9: {x: 500, y: 120, realm: "R6"},
+            H10: {x: 600, y: 100, realm: "R6"},
+            H11: {x: 550, y: 180, realm: "R6"},
+            
+            // R4 (Incomputable) - Right side, complex reasoning
+            H14: {x: 750, y: 350, realm: "R4"},
+            
+            // R7 (Multi-Realm) - Center, compositional
+            H4: {x: 500, y: 400, realm: "R7"},
+            H6: {x: 550, y: 320, realm: "R7"},
+            H8: {x: 600, y: 420, realm: "R7"},
+            H17: {x: 480, y: 280, realm: "R7"},
+            H22: {x: 650, y: 500, realm: "R7"},
+            
+            // R8 (Emergent) - Top-right, emergent patterns
+            H5: {x: 800, y: 200, realm: "R8"}
+        };
+        
+        const svg = document.getElementById('manifoldSVG');
+        const tooltip = document.getElementById('tooltip');
+        const infoContent = document.getElementById('infoContent');
+        
+        // Category colors
+        const categoryColors = {
+            'Factual': '#ef4444',
+            'Contextual': '#f59e0b',
+            'Temporal': '#3b82f6',
+            'Logical': '#ec4899',
+            'Operational': '#22c55e'
+        };
+        
+        // Realm colors
+        const realmColors = {
+            'R1': 'rgba(100, 116, 139, 0.15)',
+            'R2': 'rgba(0, 217, 255, 0.15)',
+            'R4': 'rgba(236, 72, 153, 0.15)',
+            'R6': 'rgba(59, 130, 246, 0.15)',
+            'R7': 'rgba(124, 58, 237, 0.15)',
+            'R8': 'rgba(245, 158, 11, 0.15)'
+        };
+        
+        // Create realm regions (manifold blobs) with gradients and depth
+        function createRealmRegions() {
+            // First, add SVG defs for gradients
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            
+            // Create gradients for each realm
+            const realmGradients = {
+                R1: ['#64748b', '#475569'],
+                R2: ['#00d9ff', '#0891b2'],
+                R4: ['#ec4899', '#be185d'],
+                R6: ['#3b82f6', '#1d4ed8'],
+                R7: ['#7c3aed', '#5b21b6'],
+                R8: ['#f59e0b', '#d97706']
+            };
+            
+            Object.keys(realmGradients).forEach(realm => {
+                const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'radialGradient');
+                gradient.setAttribute('id', `gradient-${realm}`);
+                
+                const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                stop1.setAttribute('offset', '0%');
+                stop1.setAttribute('stop-color', realmGradients[realm][0]);
+                stop1.setAttribute('stop-opacity', '0.25');
+                
+                const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                stop2.setAttribute('offset', '100%');
+                stop2.setAttribute('stop-color', realmGradients[realm][1]);
+                stop2.setAttribute('stop-opacity', '0.05');
+                
+                gradient.appendChild(stop1);
+                gradient.appendChild(stop2);
+                defs.appendChild(gradient);
+            });
+            
+            svg.appendChild(defs);
+            
+            // Add probability density field (background visualization)
+            const densityGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            densityGroup.setAttribute('opacity', '0.4');
+            
+            // Create flow lines to show probabilistic connections
+            const flowLines = [
+                {x1: 200, y1: 600, x2: 350, y2: 450, realm: 'R1-R2'},
+                {x1: 400, y1: 450, x2: 550, y2: 320, realm: 'R2-R7'},
+                {x1: 550, y1: 180, x2: 800, y2: 200, realm: 'R6-R8'},
+                {x1: 500, y1: 400, x2: 750, y2: 350, realm: 'R7-R4'},
+                {x1: 650, y1: 500, x2: 800, y2: 200, realm: 'R7-R8'}
+            ];
+            
+            flowLines.forEach(line => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                path.setAttribute('x1', line.x1);
+                path.setAttribute('y1', line.y1);
+                path.setAttribute('x2', line.x2);
+                path.setAttribute('y2', line.y2);
+                path.setAttribute('stroke', 'rgba(0, 217, 255, 0.15)');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('stroke-dasharray', '5,5');
+                densityGroup.appendChild(path);
+            });
+            
+            svg.appendChild(densityGroup);
+            
+            const regions = {
+                R1: 'M 100,550 Q 100,700 250,720 T 280,580 Q 150,500 100,550 Z',
+                R2: 'M 280,350 Q 280,550 450,560 T 480,320 Q 350,300 280,350 Z',
+                R6: 'M 450,80 Q 450,200 650,220 T 680,60 Q 550,40 450,80 Z',
+                R4: 'M 700,280 Q 700,420 820,440 T 850,260 Q 750,240 700,280 Z',
+                R7: 'M 420,240 Q 420,520 700,540 T 730,200 Q 500,180 420,240 Z',
+                R8: 'M 750,120 Q 750,280 880,300 T 910,100 Q 820,80 750,120 Z'
+            };
+            
+            Object.keys(regions).forEach(realm => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', regions[realm]);
+                path.setAttribute('fill', `url(#gradient-${realm})`);
+                path.setAttribute('stroke', realmGradients[realm][0]);
+                path.setAttribute('stroke-width', '1.5');
+                path.setAttribute('stroke-opacity', '0.6');
+                path.setAttribute('class', 'manifold-region');
+                path.setAttribute('data-realm', realm);
+                
+                path.addEventListener('mouseenter', function(e) {
+                    this.classList.add('active');
+                    this.setAttribute('stroke-width', '2.5');
+                    this.setAttribute('stroke-opacity', '1');
+                    showTooltip(e, `${realmLabels[realm]}: ${getRealmName(realm)}`);
+                });
+                
+                path.addEventListener('mouseleave', function() {
+                    this.classList.remove('active');
+                    this.setAttribute('stroke-width', '1.5');
+                    this.setAttribute('stroke-opacity', '0.6');
+                    hideTooltip();
+                });
+                
+                svg.appendChild(path);
+                
+                // Add realm label
+                const realmCenters = {
+                    R1: {x: 190, y: 640},
+                    R2: {x: 380, y: 430},
+                    R6: {x: 565, y: 140},
+                    R4: {x: 775, y: 360},
+                    R7: {x: 565, y: 360},
+                    R8: {x: 815, y: 190}
+                };
+                
+                const realmLabels = {
+                    R1: 'FOUNDATION',
+                    R2: 'CORE',
+                    R6: 'CONTINUOUS',
+                    R4: 'DEEP',
+                    R7: 'SYNTHESIS',
+                    R8: 'EMERGENT'
+                };
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', realmCenters[realm].x);
+                label.setAttribute('y', realmCenters[realm].y);
+                label.setAttribute('class', 'region-label');
+                label.setAttribute('fill', realmGradients[realm][0]);
+                label.setAttribute('opacity', '0.5');
+                label.textContent = realmLabels[realm];
+                svg.appendChild(label);
+            });
+        }
+        
+        function getRealmName(realm) {
+            const names = {
+                R1: 'Foundation (Rule-Based)',
+                R2: 'Core (Probabilistic)',
+                R3: 'Complex (Search-Based)',
+                R4: 'Deep (Recursive)',
+                R6: 'Continuous (Physical/Temporal)',
+                R7: 'Synthesis (Multi-Modal)',
+                R8: 'Emergent (Pattern-Based)'
+            };
+            return names[realm];
+        }
+        
+        // Create hallucination nodes
+        function createHallucinationNodes() {
+            Object.keys(htaisData).forEach(id => {
+                const data = htaisData[id];
+                const coords = layoutCoordinates[id];
+                
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('class', 'hallucination-node');
+                group.setAttribute('data-id', id);
+                group.setAttribute('data-category', data.category);
+                group.setAttribute('transform', `translate(${coords.x}, ${coords.y})`);
+                
+                // Outer glow ring
+                const outerRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                outerRing.setAttribute('r', '16');
+                outerRing.setAttribute('fill', 'none');
+                outerRing.setAttribute('stroke', categoryColors[data.category]);
+                outerRing.setAttribute('stroke-width', '1');
+                outerRing.setAttribute('opacity', '0.3');
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('r', '10');
+                circle.setAttribute('fill', categoryColors[data.category]);
+                circle.setAttribute('opacity', '0.9');
+                circle.setAttribute('stroke', categoryColors[data.category]);
+                circle.setAttribute('stroke-width', '2');
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'hallucination-label');
+                label.setAttribute('y', '28');
+                label.setAttribute('fill', categoryColors[data.category]);
+                label.textContent = id;
+                
+                group.appendChild(outerRing);
+                group.appendChild(circle);
+                group.appendChild(label);
+                
+                group.addEventListener('click', () => showHallucinationInfo(id));
+                group.addEventListener('mouseenter', (e) => {
+                    outerRing.setAttribute('r', '20');
+                    outerRing.setAttribute('opacity', '0.6');
+                    showTooltip(e, `${id}: ${data.name}`);
+                });
+                group.addEventListener('mouseleave', () => {
+                    outerRing.setAttribute('r', '16');
+                    outerRing.setAttribute('opacity', '0.3');
+                    hideTooltip();
+                });
+                
+                svg.appendChild(group);
+            });
+        }
+        
+        // Show hallucination info in panel
+        function showHallucinationInfo(id) {
+            const data = htaisData[id];
+            
+            let domainTags = data.domains.map(d => 
+                `<span class="domain-tag">${d}</span>`
+            ).join('');
+            
+            infoContent.innerHTML = `
+                <div class="hallucination-detail">
+                    <div class="hallucination-id">${id}</div>
+                    <div class="hallucination-name">${data.name}</div>
+                    <div class="hallucination-category cat-${data.category.toLowerCase()}">${data.category}</div>
+                    <p style="color: var(--text-secondary); margin: 15px 0; font-size: 0.95em; line-height: 1.6;">
+                        ${data.description}
+                    </p>
+                    
+                    <div style="margin: 15px 0; padding: 10px; background: var(--bg-light); border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 5px;">Primary Computational Region</div>
+                        <div style="font-family: 'Space Mono', monospace; color: var(--accent-primary); font-size: 1.2em; font-weight: 700;">
+                            ${getRealmName(data.realm)}
+                        </div>
+                    </div>
+                    
+                    <div class="domain-examples">
+                        <h3>Application Domains</h3>
+                        ${domainTags}
+                    </div>
+                    
+                    <div class="prevalence-indicator">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 0.85em; color: var(--text-secondary);">Prevalence Score</span>
+                            <span style="font-family: 'Space Mono', monospace; font-weight: 700; color: var(--accent-primary);">${data.prevalence}%</span>
+                        </div>
+                        <div class="prevalence-bar">
+                            <div class="prevalence-fill" style="width: ${data.prevalence}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Tooltip functions
+        function showTooltip(e, text) {
+            tooltip.textContent = text;
+            tooltip.style.left = e.pageX + 15 + 'px';
+            tooltip.style.top = e.pageY + 15 + 'px';
+            tooltip.classList.add('show');
+        }
+        
+        function hideTooltip() {
+            tooltip.classList.remove('show');
+        }
+        
+        // Realm filter
+        document.querySelectorAll('.realm-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.realm-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                const realm = this.dataset.realm;
+                
+                document.querySelectorAll('.hallucination-node').forEach(node => {
+                    const id = node.dataset.id;
+                    const data = htaisData[id];
+                    
+                    if (realm === 'all' || data.realm === realm) {
+                        node.style.opacity = '1';
+                        node.style.pointerEvents = 'auto';
+                    } else {
+                        node.style.opacity = '0.2';
+                        node.style.pointerEvents = 'none';
+                    }
+                });
+                
+                document.querySelectorAll('.manifold-region').forEach(region => {
+                    if (realm === 'all' || region.dataset.realm === realm) {
+                        region.style.opacity = '1';
+                    } else {
+                        region.style.opacity = '0.3';
+                    }
+                });
+            });
+        });
+        
+        // Initialize visualization
+        createRealmRegions();
+        createHallucinationNodes();
+        
+        // Show H22 by default (most prevalent)
+        showHallucinationInfo('H22');
+    </script>
+</body>
+</html>

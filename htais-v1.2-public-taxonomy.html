@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTAIS v1.2 - Hallucination Taxonomy for AI Systems</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .header {
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .header .subtitle {
+            color: #667eea;
+            font-size: 1.3em;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        
+        .header .meta {
+            color: #7f8c8d;
+            font-size: 0.95em;
+            margin-top: 15px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .meta-label {
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .intro {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-left: 6px solid #667eea;
+            margin-bottom: 40px;
+            border-radius: 8px;
+            font-size: 1em;
+            line-height: 1.8;
+        }
+        
+        .intro h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        .intro p {
+            margin-bottom: 12px;
+        }
+        
+        .license-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .license-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .license-box p {
+            color: #856404;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 0.92em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        thead th {
+            padding: 18px 14px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.82em;
+            letter-spacing: 0.8px;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #e1e8ed;
+            transition: all 0.2s ease;
+        }
+        
+        tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.002);
+        }
+        
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        td {
+            padding: 16px 14px;
+            vertical-align: top;
+        }
+        
+        .id-cell {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1em;
+            min-width: 60px;
+        }
+        
+        .type-cell {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 200px;
+        }
+        
+        .category-cell {
+            min-width: 120px;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .cat-factual {
+            background-color: #fee;
+            color: #c62828;
+        }
+        
+        .cat-contextual {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+        
+        .cat-temporal {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .cat-logical {
+            background-color: #fce4ec;
+            color: #c2185b;
+        }
+        
+        .cat-operational {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .description-cell {
+            color: #546e7a;
+            line-height: 1.6;
+        }
+        
+        .example-cell {
+            color: #607d8b;
+            font-style: italic;
+            line-height: 1.5;
+            font-size: 0.9em;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e1e8ed;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            tbody tr:hover {
+                background-color: transparent;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>HTAIS v1.2</h1>
+            <div class="subtitle">Hallucination Taxonomy for AI Systems</div>
+            <div class="meta">
+                <div class="meta-item">
+                    <span class="meta-label">Version:</span>
+                    <span>1.2 (Public Edition)</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Author:</span>
+                    <span>Mark Acosta, MosaicDM LLC</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Date:</span>
+                    <span>January 2026</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Status:</span>
+                    <span>Community Standard</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="license-box">
+            <h3>📄 License: Creative Commons Attribution 4.0 International (CC BY 4.0)</h3>
+            <p>
+                You are free to share and adapt this taxonomy with appropriate attribution. 
+                When using HTAIS, please cite: <strong>Acosta, M. (2026). Hallucination Taxonomy for AI Systems (HTAIS) v1.2. MosaicDM LLC.</strong>
+            </p>
+        </div>
+        
+        <div class="intro">
+            <h2>About This Taxonomy</h2>
+            <p>
+                The Hallucination Taxonomy for AI Systems (HTAIS) provides a comprehensive framework for identifying, 
+                categorizing, and communicating about AI output failures. This taxonomy covers 22 distinct hallucination 
+                types across 5 primary categories, applicable to large language models, generative AI systems, and other 
+                AI technologies that produce outputs with probabilistic characteristics.
+            </p>
+            <p>
+                <strong>Purpose:</strong> HTAIS enables researchers, developers, and organizations to precisely identify 
+                and discuss AI hallucinations, facilitating better detection methods, evaluation frameworks, and quality 
+                improvement strategies.
+            </p>
+            <p>
+                <strong>Scope:</strong> This document presents the core taxonomy definitions, categories, and examples. 
+                For implementation guidance, detection methods, and commercial-grade tools with mathematical guarantees, 
+                please contact MosaicDM LLC.
+            </p>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Hallucination Type</th>
+                    <th>Category</th>
+                    <th>Definition</th>
+                    <th>Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- FACTUAL HALLUCINATIONS -->
+                <tr>
+                    <td class="id-cell">H1</td>
+                    <td class="type-cell">Unsupported Factual Claim</td>
+                    <td class="category-cell"><span class="category-badge cat-factual">Factual</span></td>
+                    <td class="description-cell">Assertion of a factual claim without adequate grounding in provided sources, training data, or verifiable knowledge.</td>
+                    <td class="example-cell">"The Eiffel Tower is 450 meters tall" (actual: 330m)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H2</td>
+                    <td class="type-cell">Fabricated Source</td>
+                    <td class="category-cell"><span class="category-badge cat-factual">Factual</span></td>
+                    <td class="description-cell">Citation of a non-existent or misattributed source to support a claim.</td>
+                    <td class="example-cell">"According to Smith et al. (2023) in Nature..." (paper doesn't exist)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H3</td>
+                    <td class="type-cell">Fabricated Detail</td>
+                    <td class="category-cell"><span class="category-badge cat-factual">Factual</span></td>
+                    <td class="description-cell">Addition of specific but incorrect details to otherwise accurate information.</td>
+                    <td class="example-cell">"Einstein developed relativity in room 307" (room number fabricated)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H4</td>
+                    <td class="type-cell">Fabricated Relationship</td>
+                    <td class="category-cell"><span class="category-badge cat-factual">Factual</span></td>
+                    <td class="description-cell">Assertion of connections, causations, or relationships between entities that don't exist or are incorrect.</td>
+                    <td class="example-cell">"X was mentored by Y" (no such mentorship occurred)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H5</td>
+                    <td class="type-cell">False Pattern Detection</td>
+                    <td class="category-cell"><span class="category-badge cat-factual">Factual</span></td>
+                    <td class="description-cell">Claiming to detect patterns, trends, correlations, or insights that don't actually exist in analyzed data or system.</td>
+                    <td class="example-cell">"I notice a clear upward trend" (data is random noise)</td>
+                </tr>
+                
+                <!-- CONTEXTUAL HALLUCINATIONS -->
+                <tr>
+                    <td class="id-cell">H6</td>
+                    <td class="type-cell">Out-of-Scope Assertion</td>
+                    <td class="category-cell"><span class="category-badge cat-contextual">Contextual</span></td>
+                    <td class="description-cell">Making claims or providing information beyond the defined scope or boundaries of the system's knowledge or task.</td>
+                    <td class="example-cell">Document summarizer adding information not in document</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H7</td>
+                    <td class="type-cell">Hidden Claim</td>
+                    <td class="category-cell"><span class="category-badge cat-contextual">Contextual</span></td>
+                    <td class="description-cell">Embedding unsupported claims within responses without making them explicit or verifiable.</td>
+                    <td class="example-cell">"As is well known..." (presupposing universal knowledge)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H8</td>
+                    <td class="type-cell">Context Drift</td>
+                    <td class="category-cell"><span class="category-badge cat-contextual">Contextual</span></td>
+                    <td class="description-cell">Gradual deviation from the original context or topic, leading to unsupported or irrelevant claims.</td>
+                    <td class="example-cell">Multi-turn conversation drifting from factual to invented details</td>
+                </tr>
+                
+                <!-- TEMPORAL HALLUCINATIONS -->
+                <tr>
+                    <td class="id-cell">H9</td>
+                    <td class="type-cell">Outdated Fact</td>
+                    <td class="category-cell"><span class="category-badge cat-temporal">Temporal</span></td>
+                    <td class="description-cell">Presenting previously true information as current when it has been superseded or changed.</td>
+                    <td class="example-cell">"The President is..." (using outdated information)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H10</td>
+                    <td class="type-cell">Premature Assertion</td>
+                    <td class="category-cell"><span class="category-badge cat-temporal">Temporal</span></td>
+                    <td class="description-cell">Claiming something has occurred or exists when it has not yet happened or been confirmed.</td>
+                    <td class="example-cell">"The merger was completed" (still pending)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H11</td>
+                    <td class="type-cell">Anachronism</td>
+                    <td class="category-cell"><span class="category-badge cat-temporal">Temporal</span></td>
+                    <td class="description-cell">Placing events, technologies, or concepts in incorrect temporal contexts.</td>
+                    <td class="example-cell">"Napoleon used telegraph communications" (anachronistic)</td>
+                </tr>
+                
+                <!-- LOGICAL HALLUCINATIONS -->
+                <tr>
+                    <td class="id-cell">H12</td>
+                    <td class="type-cell">Self-Contradiction</td>
+                    <td class="category-cell"><span class="category-badge cat-logical">Logical</span></td>
+                    <td class="description-cell">Making mutually incompatible claims within the same response or session.</td>
+                    <td class="example-cell">"X is true" followed by "X is false"</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H13</td>
+                    <td class="type-cell">Incompatible Constraints</td>
+                    <td class="category-cell"><span class="category-badge cat-logical">Logical</span></td>
+                    <td class="description-cell">Specifying requirements, conditions, or constraints that cannot simultaneously be satisfied.</td>
+                    <td class="example-cell">"The function is pure and has side effects"</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H14</td>
+                    <td class="type-cell">Invalid Inference</td>
+                    <td class="category-cell"><span class="category-badge cat-logical">Logical</span></td>
+                    <td class="description-cell">Drawing conclusions that don't logically follow from premises or evidence.</td>
+                    <td class="example-cell">"A correlates with B, therefore A causes B"</td>
+                </tr>
+                
+                <!-- OPERATIONAL HALLUCINATIONS -->
+                <tr>
+                    <td class="id-cell">H15</td>
+                    <td class="type-cell">Overconfidence</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Presenting uncertain or probabilistic information with inappropriate certainty or confidence.</td>
+                    <td class="example-cell">"X will definitely happen" (uncertain future event)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H16</td>
+                    <td class="type-cell">Missing Qualification</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Failing to provide necessary context, limitations, or conditions when making claims.</td>
+                    <td class="example-cell">"Algorithm X is fastest" (missing: "for this use case")</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H17</td>
+                    <td class="type-cell">Authority Inflation</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Claiming or implying capabilities, expertise, or authority beyond the system's actual design or validation.</td>
+                    <td class="example-cell">"As an expert in quantum physics..." (no actual expertise)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H18</td>
+                    <td class="type-cell">Fake Tool Use</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Claiming to have used tools, APIs, or external resources without actually executing them.</td>
+                    <td class="example-cell">"I searched the database..." (no search executed)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H19</td>
+                    <td class="type-cell">Imaginary Computation</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Presenting computational results without actually performing the computation.</td>
+                    <td class="example-cell">"The sum is 12,847" (number invented, not calculated)</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H20</td>
+                    <td class="type-cell">Broken Schema</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Generating outputs that violate specified schemas, formats, or structural requirements.</td>
+                    <td class="example-cell">Invalid JSON when JSON required</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H21</td>
+                    <td class="type-cell">Silent Failure</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Proceeding with output generation despite encountering errors, missing information, or inability to complete the task properly.</td>
+                    <td class="example-cell">Generating response when source unavailable without noting this</td>
+                </tr>
+                
+                <tr>
+                    <td class="id-cell">H22</td>
+                    <td class="type-cell">Type/Category Confusion</td>
+                    <td class="category-cell"><span class="category-badge cat-operational">Operational</span></td>
+                    <td class="description-cell">Applying reasoning patterns, operations, or logic valid in one domain or context inappropriately to another domain where they don't apply.</td>
+                    <td class="example-cell">"Probability is 0.7, so it will definitely happen"</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="footer">
+            <p>
+                <strong>HTAIS v1.2 - Public Edition</strong><br>
+                Copyright © 2024-2026 MosaicDM LLC. Licensed under CC BY 4.0.<br>
+                For commercial implementation tools, detection services, or consulting: <a href="mailto:contact@mosaicdm.co">contact@mosaicdm.co</a><br>
+                Visit: <a href="https://mosaicdm.co">mosaicdm.co</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

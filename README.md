@@ -3,9 +3,9 @@
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 [![Version](https://img.shields.io/badge/version-1.2-blue.svg)](https://github.com/mosaicdm/htais/releases)
 
-A comprehensive, mathematically rigorous taxonomy for identifying and classifying AI hallucinations across 22 distinct types.
+A comprehensive taxonomy for identifying and classifying AI hallucinations across 22 distinct types.
 
-HTAIS provides a systematic framework for understanding, detecting, and preventing AI output failures. Applicable to large language models, generative AI, autonomous systems, medical AI, and any system that generates outputs probabilistically.
+HTAIS provides a systematic framework for understanding, identifying, and classifying AI output failures. The goal is to have a well defined taxonomy of hallucination types and classes. If we can mitigate entire classes of hallucinations, or better, eliminate them completely, then we can step closer to AI Safety and safety of probabilistic systems.
 
 ---
 
@@ -26,13 +26,30 @@ HTAIS provides a systematic framework for understanding, detecting, and preventi
 
 AI systems increasingly generate content that appears plausible but is factually incorrect, logically inconsistent, or misleading. These "hallucinations" represent a critical challenge for AI deployment, particularly in safety-critical, financial, and regulatory contexts.
 
-**HTAIS solves this by providing:**
+**HTAIS addresses this by providing:**
 
 * Comprehensive Classification: 22 distinct hallucination types across 5 categories
 * Universal Framework: Applicable to any AI system with probabilistic outputs
 * Clear Definitions: Unambiguous categorization with concrete examples
-* Domain Coverage: Validated across 10+ application areas
+* Domain Coverage: Applicable across 10+ application areas
 * Research Foundation: Enables systematic measurement and comparison
+
+## Scope and Intent
+
+HTAIS defines a **classification framework** for identifying and naming hallucination and failure modes in AI system outputs.
+
+It is intentionally limited to:
+- precise terminology
+- observable failure definitions
+- category boundaries
+
+HTAIS does **not** specify:
+- how hallucinations are detected
+- how failures are scored or prioritized
+- how enforcement or blocking decisions are made
+- how correctness is operationalized in production systems
+
+Those concerns are **implementation-specific** and depend on system architecture, execution guarantees, and risk tolerance.
 
 ### Why HTAIS Matters
 
@@ -142,8 +159,9 @@ HTAIS applies to **any AI system with probabilistic outputs**, particularly when
 - Outputs are generated from learned patterns (not pure retrieval)
 - Ground truth verification is expensive or delayed
 - Errors have significant consequences (safety, financial, regulatory)
+- In practice, HTAIS is most effective when paired with systems capable of enforcing correctness constraints on AI outputs.
 
-### Validated Domains
+### Applicable Domains
 
 | Domain | Key Hallucination Types | Why It Matters |
 |--------|------------------------|----------------|
@@ -159,6 +177,19 @@ HTAIS applies to **any AI system with probabilistic outputs**, particularly when
 | **Translation** | H1, H3, H6, H8 | Communication accuracy, cultural fidelity |
 
 See [htais-application-domains-public.md](htais-application-domains-public.md) for detailed coverage.
+
+---
+
+## Non-Goals
+
+HTAIS is not intended to:
+- replace model evaluation frameworks
+- prescribe confidence scores or probabilities
+- act as a runtime policy engine
+- guarantee truth, accuracy, or safety on its own
+
+HTAIS provides a shared paradigm and classification for failure analysis.
+Correctness enforcement requires additional systems.
 
 ---
 
@@ -240,7 +271,7 @@ While HTAIS is freely available under **CC BY 4.0**, MosaicDM offers commercial-
 
 ### What We Provide
 
-**Mathematical Detection Framework**
+**Mathematical correctness enforcement frameworks**
 
 **HTAIS-Certified Tools**
 
@@ -300,7 +331,7 @@ https://github.com/mosaicdm/htais
 
 A: No. HTAIS applies to any AI system with probabilistic outputs - LLMs, generative AI, autonomous systems, medical AI, scientific simulation, code generation, and more. The taxonomy is universal.
 
-**Q: How do I implement detection for these types?**
+**Q: How are HTAIS categories used in detection systems?**
 
 A: The open taxonomy provides classification. Detection implementation requires technical expertise and domain-specific approaches. MosaicDM offers commercial tools with mathematical guarantees.
 
@@ -310,7 +341,7 @@ A: Yes. CC BY 4.0 allows commercial use. Just provide proper attribution.
 
 **Q: How is this different from other hallucination taxonomies?**
 
-A: HTAIS is the first comprehensive, mathematically rigorous taxonomy covering 22 distinct types with universal applicability. It's validated across 10+ domains and provides clear definitions with concrete examples.
+A: HTAIS is the first comprehensive( we could not find anything else, so we did this ourselves ) taxonomy covering 22 distinct types with universal applicability. It's applicable across 10+ domains and provides clear definitions with concrete examples.
 
 **Q: Can I propose new hallucination types?**
 
